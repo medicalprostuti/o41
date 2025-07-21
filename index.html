@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "ইনজেকশন সিরিঞ্জ তৈরিতে নিচের কোনটি ব্যবহৃত হয়?",
+          options: {
+            A: "টেফলন",
+            B: "পলিস্টারিন",
+            C: "পলিভিনাইল ক্লোরাইড",
+            D: "টেরিলিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>ইনজেকশন সিরিঞ্জ তৈরির জন্য সাধারণত পলিপ্রোপিলিন (polypropylene) বা পলিভিনাইল ক্লোরাইড (PVC) ব্যবহৃত হয়, কারণ এগুলি নমনীয়, স্বচ্ছ এবং জীবাণুমুক্ত করা সহজ। প্রদত্ত বিকল্পগুলির মধ্যে, পলিভিনাইল ক্লোরাইড (PVC) সিরিঞ্জ তৈরিতে ব্যবহৃত হতে পারে।</p>",
+        },
+        {
+          id: 2,
+          question: "রান্নার ফ্রাইপ্যানে কোনটির কোটিং দেয়া হয়?",
+          options: {
+            A: "পলিথিন",
+            B: "প্লাস্টিক",
+            C: "টেফলন",
+            D: "পলিস্টারিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>রান্নার ফ্রাইপ্যান এবং অন্যান্য নন-স্টিক কুকওয়্যারে সাধারণত টেফলন (Teflon), যার রাসায়নিক নাম পলিটেট্রাফ্লুরোইথিলিন (PTFE), এর কোটিং দেওয়া হয়। টেফলন তাপ-সহনশীল, রাসায়নিকভাবে নিষ্ক্রিয় এবং নন-স্টিক গুণাবলী সম্পন্ন।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "মাইলার নামক প্লাস্টিক ফিল্ম বা রেকর্ডিং টেপ তৈরি হয় কোথা থেকে?",
+          options: {
+            A: "নাইলন",
+            B: "টেফলন",
+            C: "ডেক্রোন",
+            D: "টেরিলিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>মাইলার (Mylar) হলো পলিথিলিন টেরেফথালেট (PET) এর একটি ব্র্যান্ড নাম, যা ডেক্রোন (Dacron) নামেও পরিচিত। এটি একটি পলিয়েস্টার, যা প্লাস্টিক ফিল্ম, রেকর্ডিং টেপ, এবং ফ্যাব্রিক তৈরিতে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 4,
+          question: "নিম্নের কোনটি দ্বারা হেক্সামিন তৈরি হয়?",
+          options: {
+            A: "ফরমালিন",
+            B: "অ্যামিন",
+            C: "ইথিলিন",
+            D: "ফরমান্ডিহাইড",
+          },
+          correct: "A",
+          explanation:
+            "<p>হেক্সামিন, যার রাসায়নিক নাম হেক্সামিথিলিনটেট্রামিন, ফরমালডিহাইড (formaldehyde) এবং অ্যামোনিয়ার বিক্রিয়ায় তৈরি হয়। ফরমালিন হলো ফরমালডিহাইডের জলীয় দ্রবণ। তাই ফরমালিন থেকে হেক্সামিন তৈরি করা সম্ভব।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "ইথিলিন থেকে যুত পলিমারকরণ প্রক্রিয়ায় টেফলন প্রস্তুত করার সময় নিম্নের কোন প্রভাবক ব্যবহার করা হয়?",
+          options: {
+            A: "Fe₂O₃",
+            B: "Cr₂O₃",
+            C: "AlCl₃",
+            D: "FeSO₄, H₂O₂",
+          },
+          correct: "D",
+          explanation:
+            "<p>টেট্রাফ্লুরোইথিলিন (tetrafluoroethylene) এর যুত পলিমারকরণ প্রক্রিয়ায় টেফলন (PTFE) প্রস্তুত করা হয়। এই পলিমারকরণ বিক্রিয়া সাধারণত ফ্রি-র‍্যাডিক্যাল প্রক্রিয়া দ্বারা সংঘটিত হয়, যেখানে FeSO₄ এবং H₂O₂ (ফেরাস সালফেট এবং হাইড্রোজেন পারক্সাইড) এর মতো বিকারকগুলি একটি রেডিক্যাল ইনিশিয়েটর সিস্টেম হিসেবে কাজ করে।</p>",
+        },
+        {
+          id: 6,
+          question: "অরলন, এক্রিল্যান-এর মনোমার নিম্নের কোনটি?",
+          options: {
+            A: "প্রোপিলিন",
+            B: "প্রোপিন-নাইট্রাইল",
+            C: "টেফলন",
+            D: "পলিভিনাইল অ্যাসিটেট",
+          },
+          correct: "B",
+          explanation:
+            "<p>অরলন (Orlon) এবং এক্রিল্যান (Acrylan) হলো পলিয়্যাক্রিলোনাইট্রাইল (polyacrylonitrile) এর বাণিজ্যিক নাম। এদের মনোমার হলো অ্যাক্রিলোনাইট্রাইল (acrylonitrile), যার রাসায়নিক নাম প্রোপিন-নাইট্রাইল (Propene-nitrile) বা 2-প্রোপেনেনাইট্রাইল।</p>",
+        },
+        {
+          id: 7,
+          question: "নাইলন 6:6 উৎপাদনের সময় নিম্নের কোনটি প্রয়োজন হয়?",
+          options: {
+            A: "অ্যামিনো উন-ডেকোনোয়িক এসিড",
+            B: "সাইক্লো হেক্সানল",
+            C: "অ্যাডিপিক এসিড",
+            D: "সেবাসিক এসিড",
+          },
+          correct: "C",
+          explanation:
+            "<p>নাইলন 6:6 হলো একটি ঘনীভবন পলিমার, যা হেক্সামিথিলিনডাইঅ্যামিন (Hexamethylenediamine) এবং অ্যাডিপিক অ্যাসিড (Adipic acid) এর বিক্রিয়ায় উৎপন্ন হয়। দুটি '6' এই দুটি মনোমারের কার্বন সংখ্যাকে নির্দেশ করে।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "টেরিলিন উৎপাদনের জন্য ডাইমিথাইল টেরিথ্যালেট এর সাথে নিম্নের কোনটি প্রয়োজন হয়?",
+          options: {
+            A: "প্রোপিলিন গ্লাইকল",
+            B: "ইথিলিন অক্সাইড",
+            C: "ইথিলিন হাইড্রোক্সাইড",
+            D: "ইথিলিন গ্লাইকল",
+          },
+          correct: "D",
+          explanation:
+            "<p>টেরিলিন (Terylene) হলো একটি পলিয়েস্টার, যা পলিথিলিন টেরেফথালেট (PET) নামেও পরিচিত। এটি ডাইমিথাইল টেরেফথালেট (Dimethyl terephthalate) এবং ইথিলিন গ্লাইকল (Ethylene glycol) এর ঘনীভবন পলিমারকরণ বিক্রিয়ায় উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "প্রোপিলিন থেকে পলি প্রোপিলিন পলিমার গঠনের সময় নিম্নের কত atm চাপের প্রয়োজন হয়?",
+          options: {
+            A: "140",
+            B: "120",
+            C: "160",
+            D: "180",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রোপিলিন থেকে পলিপ্রোপিলিন (polypropylene) পলিমার তৈরিতে জিগলার-নাট্টা প্রভাবক (Ziegler-Natta catalyst) ব্যবহার করা হয়। এই প্রক্রিয়াটি সাধারণত মাঝারি থেকে উচ্চ চাপে (যেমন 140 atm বা এর কাছাকাছি) এবং তুলনামূলকভাবে কম তাপমাত্রায় সংঘটিত হয়।</p>",
+        },
+        {
+          id: 10,
+          question: "পারপ্লেক্স, প্লেক্সিগ্লাস-এর মনোমার নিম্নের কোনটি?",
+          options: {
+            A: "ভিনাইল অ্যাসিটেট",
+            B: "2 মিথাইল প্রোপানোয়েট",
+            C: "পলিস্টারিন",
+            D: "ইথাইল বেনজিন",
+          },
+          correct: "B",
+          explanation:
+            "<p>পারপ্লেক্স (Perspex) এবং প্লেক্সিগ্লাস (Plexiglas) উভয়ই পলি(মিথাইল মেথাক্রাইলেট) (PMMA) এর বাণিজ্যিক নাম। এর মনোমার হলো মিথাইল মেথাক্রাইলেট (Methyl methacrylate)। মিথাইল মেথাক্রাইলেটের আরেকটি নাম হল 2-মিথাইলপ্রোপ-2-ইনোইক অ্যাসিডের মিথাইল এস্টার। বিকল্প B, 2-মিথাইল প্রোপানোয়েট, ভুল কারণ এটি একটি সম্পৃক্ত যৌগ। সঠিক মনোমার হল মিথাইল মেথাক্রাইলেট। তবে, যদি '2 মিথাইল প্রোপানোয়েট' দ্বারা 'মিথাইল মেথাক্রাইলেট' বোঝানো হয় (একটি ভুল নামকরণ হলেও), তাহলে এটিই সবচেয়ে কাছাকাছি বিকল্প। রাসায়নিকভাবে, মিথাইল মেথাক্রাইলেট হল CH₂=C(CH₃)COOCH₃, যা 2-মিথাইলপ্রোপ-2-ইনোয়েট নামেও পরিচিত। যেহেতু বিকল্পগুলিতে সরাসরি 'মিথাইল মেথাক্রাইলেট' নেই, তাই '2 মিথাইল প্রোপানোয়েট' (যদি এটি 2-মিথাইলপ্রোপিনোইক এসিডের মিথাইল এস্টার বোঝায়) সবচেয়ে প্রাসঙ্গিক।</p>",
+        },
+        {
+          id: 11,
+          question: "নাইলন 6:6 এর ক্ষেত্রে 6 ও 6 সংখ্যা দুইটি নির্দেশ করে-",
+          options: {
+            A: "নাইট্রোজেন সংখ্যা",
+            B: "পলিমার সংখ্যা",
+            C: "কার্বন সংখ্যা",
+            D: "নাইলনের সংখ্যা",
+          },
+          correct: "C",
+          explanation:
+            "<p>নাইলন 6:6 একটি ঘনীভবন পলিমার, যা দুটি মনোমার থেকে তৈরি হয়: হেক্সামিথিলিনডাইঅ্যামিন (৬টি কার্বন) এবং অ্যাডিপিক অ্যাসিড (৬টি কার্বন)। তাই, 6:6 সংখ্যা দুটি প্রতিটি মনোমারে উপস্থিত কার্বন পরমাণুর সংখ্যাকে নির্দেশ করে।</p>",
+        },
+        {
+          id: 12,
+          question: "কোন যৌগ ও ফেনলের বিক্রিয়ায় ব্যাকেলাইট উৎপন্ন করা হয়?",
+          options: {
+            A: "টলএন বিকারক",
+            B: "NaHCO₃ দ্রবণ",
+            C: "ফেলিং দ্রবণ",
+            D: "HCHO",
+          },
+          correct: "D",
+          explanation:
+            "<p>ব্যাকেলাইট (Bakelite) হলো একটি থার্মোসেটিং পলিমার, যা ফেনল (phenol) এবং ফরমালডিহাইড (HCHO) এর ঘনীভবন পলিমারকরণ বিক্রিয়ায় উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "কোনটি পলিঅ্যামাইড?",
+          options: {
+            A: "নাইলন",
+            B: "ডেক্রন",
+            C: "টেফলন",
+            D: "PVC",
+          },
+          correct: "A",
+          explanation:
+            "<p>পলিঅ্যামাইড হলো এমন একটি পলিমার যার পলিমার চেইনে অ্যামাইড বন্ধন (-CONH-) থাকে। নাইলন হলো একটি পলিঅ্যামাইড। ডেক্রন একটি পলিয়েস্টার, টেফলন একটি পলিফ্লুরোকার্বন এবং PVC একটি পলিভিনাইল হ্যালাইড।</p>",
+        },
+        {
+          id: 14,
+          question: "রেইনকোট তৈরিতে কোনটি ব্যবহৃত হয়?",
+          options: {
+            A: "টেফলন",
+            B: "PVC",
+            C: "পলিস্টাইরিন",
+            D: "পলিথিন",
+          },
+          correct: "B",
+          explanation:
+            "<p>রেইনকোট এবং অন্যান্য জলরোধী পোশাক তৈরিতে পলিভিনাইল ক্লোরাইড (PVC) ব্যবহৃত হয়, কারণ এটি জলরোধী এবং নমনীয়।</p>",
+        },
+        {
+          id: 15,
+          question: "পলিভিনাইল ক্লোরাইড (PVC) নিচের কোনটি থেকে তৈরি করা হয়?",
+          options: {
+            A: "CH₂=CH₂",
+            B: "CH≡CH",
+            C: "CH₃CH=CH₂",
+            D: "CH₃–CH₃",
+          },
+          correct: "B",
+          explanation:
+            "<p>পলিভিনাইল ক্লোরাইড (PVC) এর মনোমার হলো ভিনাইল ক্লোরাইড (CH₂=CHCl)। ভিনাইল ক্লোরাইড ইথিলিন (CH₂=CH₂) থেকে তৈরি হয়, কিন্তু প্রশ্নটি সরাসরি মনোমারকে না জিজ্ঞাসা করে এর উৎস জানতে চাইছে। ভিনাইল ক্লোরাইড সাধারণত অ্যাসিটিলিন (CH≡CH) এবং HCl এর বিক্রিয়া দ্বারা তৈরি হয়। তাই, যদি মনোমারের উৎস জানতে চাওয়া হয়, তবে অ্যাসিটিলিন (CH≡CH) একটি প্রাসঙ্গিক বিকল্প হতে পারে, যদিও সরাসরি মনোমার CH₂=CHCl। তবে, প্রচলিত অর্থে PVC ভিনাইল ক্লোরাইড মনোমার থেকে তৈরি হয়। যদি বিকল্প (D) CH₂=CHCl থাকতো, সেটি সবচেয়ে সঠিক উত্তর হতো। প্রদত্ত বিকল্পগুলির মধ্যে, CH≡CH (অ্যাসিটিলিন) থেকে পরোক্ষভাবে ভিনাইল ক্লোরাইড তৈরি হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "ঘুমের ঔষধ হিসেবে ব্যবহৃত হয় কোনটি?",
+          options: {
+            A: "ফরমালডিহাইড",
+            B: "অ্যাসিটালডিহাইড",
+            C: "প্যারালডিহাইড",
+            D: "মেটালডিহাইড",
+          },
+          correct: "C",
+          explanation:
+            "<p>প্যারালডিহাইড (Paraldehyde) হলো অ্যাসিটালডিহাইডের একটি ট্রাইমার, যা অতীতে ঘুমের ওষুধ (হিপনোটিক) এবং সিডেটিভ হিসেবে ব্যবহৃত হতো। এটি বর্তমানে খুব বেশি ব্যবহৃত হয় না, তবে এর ঐতিহাসিক ব্যবহার রয়েছে।</p>",
+        },
+        {
+          id: 17,
+          question: "কোনটি ঘনীভবন পলিমারের উদাহরণ?",
+          options: {
+            A: "পলিস্টাইরিন",
+            B: "পলিথিন",
+            C: "পলিভিনাইল ক্লোরাইড",
+            D: "পলিএস্টার",
+          },
+          correct: "D",
+          explanation:
+            "<p>ঘনীভবন পলিমারকরণ (Condensation polymerization) হলো এমন একটি প্রক্রিয়া যেখানে মনোমারগুলি একত্রিত হয়ে একটি পলিমার গঠন করে এবং একটি ছোট অণু (যেমন পানি বা অ্যামোনিয়া) অপসারিত হয়। পলিয়েস্টার হলো ঘনীভবন পলিমারের একটি উদাহরণ (যেমন, টেরিথ্যালিক অ্যাসিড এবং ইথিলিন গ্লাইকল থেকে টেরিলিন)। পলিস্টাইরিন, পলিথিন এবং পলিভিনাইল ক্লোরাইড হলো যুত পলিমার।</p>",
+        },
+        {
+          id: 18,
+          question: "প্লাস্টিক তৈরির কাঁচামাল-",
+          options: {
+            A: "CH₃COCl",
+            B: "CH₃CHO",
+            C: "CH₃COOH",
+            D: "H₂N–CO–NH₂",
+          },
+          correct: "C",
+          explanation:
+            "<p>প্লাস্টিক তৈরি করার জন্য বিভিন্ন ধরণের কাঁচামাল ব্যবহার করা হয়, যার মধ্যে অ্যাসিটিক অ্যাসিড (CH₃COOH) কিছু প্লাস্টিক (যেমন পলিভিনাইল অ্যাসিটেট) তৈরিতে পরোক্ষভাবে ব্যবহৃত হয়। তবে, এই প্রশ্নের উত্তরটি সাধারণত ব্যবহৃত কিছু মনোমার যেমন ইথিলিন, প্রোপিলিন, ভিনাইল ক্লোরাইড ইত্যাদি থেকে আসা উচিত ছিল। প্রদত্ত বিকল্পগুলির মধ্যে, যদি কোনো নির্দিষ্ট প্লাস্টিকের কথা না বলা হয়, তবে একটি সাধারণ উত্তর দেওয়া কঠিন। তবে, ইউরিয়া (H₂N–CO–NH₂) ইউরিয়া-ফরমালডিহাইড রেজিন তৈরিতে ব্যবহৃত হয়, যা এক ধরনের প্লাস্টিক। অ্যাসিটিক অ্যাসিড বিভিন্ন এস্টার এবং অন্যান্য পলিমারের মনোমার উৎপাদনে ব্যবহৃত হতে পারে। CH₃COOH (অ্যাসিটিক অ্যাসিড) পলিভিনাইল অ্যাসিটেট এর একটি উপাদান (ভিনাইল অ্যাসিটেট তৈরিতে)। যদি প্রশ্নটি আরও নির্দিষ্ট হতো, তবে উত্তর আরও স্পষ্ট হতো। তবে, যদি ইউরিয়া-ফরমালডিহাইড রেজিন বা অ্যাসিটেট প্লাস্টিকের কথা বলা হয়, তবে এই বিকল্পগুলি প্রাসঙ্গিক।</p>",
+        },
+        {
+          id: 19,
+          question: "কম্পিউটার ডিস্ক তৈরিতে ব্যবহৃত হয় কোন পলিমার?",
+          options: {
+            A: "পলিইথিলিন",
+            B: "পলিস্টারিন",
+            C: "পলিভিনাইল এসিটেড",
+            D: "পলিভিনাইল ক্লোরাইড",
+          },
+          correct: "D",
+          explanation:
+            "<p>কম্পিউটার ডিস্ক (যেমন CD, DVD, Blu-ray) তৈরিতে সাধারণত পলিভিনাইল ক্লোরোইড ব্যবহৃত হয়, যা তার স্বচ্ছতা, স্থায়িত্ব এবং প্রভাব প্রতিরোধের জন্য পরিচিত। প্রদত্ত বিকল্পগুলির মধ্যে, পলিস্টাইরিন (Polystyrene) সিডি কেস বা অন্যান্য সম্পর্কিত প্লাস্টিক সামগ্রী তৈরিতে ব্যবহৃত হতে পারে, তবে ডিস্কের মূল উপাদান পলিকার্বোনেট। যেহেতু পলিকার্বোনেট বিকল্পে নেই, এবং পলিস্টাইরিন বিভিন্ন অপটিক্যাল এবং প্যাকেজিং অ্যাপ্লিকেশনগুলিতে ব্যবহৃত হয় তাই পলিভিনাইল ক্লোরোইড কে সঠিক উত্তর হিসেবে বেছে নেওয়া হলো।</p>",
+        },
+        {
+          id: 20,
+          question: "পলিমার হলো-",
+          options: {
+            A: "Micromolecule",
+            B: "Macromolecule",
+            C: "Sub-micromolecule",
+            D: "Sub-macromolecule",
+          },
+          correct: "B",
+          explanation:
+            "<p>পলিমার হলো ম্যাক্রোমলিকিউল (Macromolecule), অর্থাৎ বিশাল আকারের অণু যা অসংখ্য ছোট পুনরাবৃত্ত ইউনিট (মনোমার) দ্বারা গঠিত।</p>",
+        },
+        {
+          id: 21,
+          question: "PVC এর উপাদান কোনটি?",
+          options: {
+            A: "CH=CH",
+            B: "CH₂=CHCl",
+            C: "ClCH=CHCl",
+            D: "CH₂=CHCH₂Cl",
+          },
+          correct: "B",
+          explanation:
+            "<p>PVC (পলিভিনাইল ক্লোরাইড) এর মনোমার হলো ভিনাইল ক্লোরাইড (Vinyl chloride), যার রাসায়নিক সংকেত CH₂=CHCl।</p>",
+        },
+        {
+          id: 22,
+          question: "মাক্রো অণু কিন্তু পলিমার নয় কোনটি?",
+          options: {
+            A: "ক্লোরোফিল",
+            B: "পলিস্টারিন",
+            C: "ব্যাকেলাইট",
+            D: "মেলামিন",
+          },
+          correct: "A",
+          explanation:
+            "<p>ম্যাক্রোঅণু হলো বিশাল আকারের অণু। পলিমার হলো এমন ম্যাক্রোঅণু যা পুনরাবৃত্ত মনোমার ইউনিট দ্বারা গঠিত। ক্লোরোফিল (Chlorophyll) একটি ম্যাক্রোঅণু (জটিল অণু), কিন্তু এটি পলিমার নয় কারণ এটি পুনরাবৃত্ত মনোমার ইউনিট দ্বারা গঠিত নয়। পলিস্টাইরিন, ব্যাকেলাইট এবং মেলামাইন (ইউরিয়া-ফরমালডিহাইড রেজিন বা মেলামাইন-ফরমালডিহাইড রেজিন) সবই পলিমার।</p>",
+        },
+        {
+          id: 23,
+          question: "মেলামাইন হলো-",
+          options: {
+            A: "ফেনল ও মিথান্যালের পলিমার",
+            B: "ইউরিয়ার পলিমার",
+            C: "ইথিলিন ডাইঅ্যামিন ও অ্যাডিপিক এসিডের পলিমার",
+            D: "মেনথলের পলিমার",
+          },
+          correct: "B",
+          explanation: "<p>-</p>",
+        },
+        {
+          id: 24,
+          question: "কোনটি যুত পলিমার?",
+          options: {
+            A: "নাইলন",
+            B: "পলিএস্টার",
+            C: "স্টার্চ",
+            D: "পলিপ্রপিন",
+          },
+          correct: "D",
+          explanation:
+            "<p>যুত পলিমারকরণে (Addition polymerization) মনোমারগুলি সরাসরি একে অপরের সাথে যুক্ত হয়ে একটি পলিমার গঠন করে, কোনো ছোট অণু অপসারিত হয় না। পলিপ্রোপিন (polypropene) হলো প্রোপিনের যুত পলিমার। নাইলন এবং পলিএস্টার ঘনীভবন পলিমার, এবং স্টার্চ একটি প্রাকৃতিক পলিমার (পলিস্যাকারাইড)।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "রিউমেটিক فیভার ও প্রস্রাবের থলি সংক্রান্ত প্রদাহ রোগে ওষুধ হিসেবে ব্যবহৃত হয়-",
+          options: {
+            A: "হেক্সামিন",
+            B: "গ্লিসারিন",
+            C: "মেনথল",
+            D: "টারপিনিওল",
+          },
+          correct: "A",
+          explanation:
+            "<p>হেক্সামিন (Hexamethylenetetramine) মূত্রনালীর সংক্রমণ (urinary tract infections) এবং রিউমেটিক فیভারের কিছু চিকিৎসায় ব্যবহৃত হয়। এটি প্রস্রাবে ফরমালডিহাইডে রূপান্তরিত হয়ে অ্যান্টিসেপটিক হিসেবে কাজ করে।</p>",
+        },
+        {
+          id: 26,
+          question: "নিম্নের কোনটি ভিনাইল ক্লোরাইড এক সংকেত?",
+          options: {
+            A: "C₂H₄Cl₂",
+            B: "C₂H₅Cl",
+            C: "C₂H₂Cl₂",
+            D: "C₂H₃Cl",
+          },
+          correct: "D",
+          explanation:
+            "<p>ভিনাইল ক্লোরাইড (Vinyl chloride) এর রাসায়নিক সংকেত হলো CH₂=CHCl, যার আণবিক সংকেত C₂H₃Cl।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "প্রাকৃতিক রাবার ওজোনের সংস্পর্শে ক্ষতি সাধিত হয়-কারণ রাবারে আছে-",
+          options: {
+            A: "C - C bond",
+            B: "C = C bond",
+            C: "C ≡ C bond",
+            D: "C = O bond",
+          },
+          correct: "B",
+          explanation:
+            "<p>প্রাকৃতিক রাবার হলো পলিআইসোপ্রিন, যাতে অসংখ্য কার্বন-কার্বন দ্বিবন্ধন (C=C bond) বিদ্যমান। ওজোন (O₃) এই দ্বিবন্ধনগুলির সাথে বিক্রিয়া করে রাবারকে অবনমিত করে (ওজোনolysis), যার ফলে রাবারের স্থিতিস্থাপকতা নষ্ট হয় এবং এটি ভঙ্গুর হয়ে যায়।</p>",
+        },
+        {
+          id: 28,
+          question: "ব্যাকেলাইট পলিমার তৈরিতে কোন কোন মনোমার লাগে?",
+          options: {
+            A: "ফেনল ও ফরমালডিহাইড",
+            B: "স্টাইরিন ও বুটাডাইন",
+            C: "ইথিলিন ও প্রোপিলিন",
+            D: "ইউরিয়া ও ফরমালডিহাইড",
+          },
+          correct: "A",
+          explanation:
+            "<p>ব্যাকেলাইট (Bakelite) হলো একটি থার্মোসেটিং রেজিন, যা ফেনল (Phenol) এবং ফরমালডিহাইড (Formaldehyde) এর ঘনীভবন পলিমারকরণ দ্বারা তৈরি হয়।</p>",
+        },
+        {
+          id: 29,
+          question: "নিচের কোনটি হোমো পলিমার?",
+          options: {
+            A: "Adipic acid and Hexamethylene diamine",
+            B: "Ethylene and phenol",
+            C: "Phenol and Formaldehyde",
+            D: "PVC",
+          },
+          correct: "D",
+          explanation:
+            "<p>হোমো পলিমার হলো এমন পলিমার যা শুধুমাত্র এক ধরনের মনোমার থেকে তৈরি হয়। PVC (পলিভিনাইল ক্লোরাইড) হলো ভিনাইল ক্লোরাইড মনোমারের একটি হোমো পলিমার। বাকি বিকল্পগুলি কোপলিমার তৈরির মনোমার নির্দেশ করে বা মনোমারগুলির মিশ্রণ।</p>",
+        },
+        {
+          id: 30,
+          question: "নিম্নের কোনটি থার্মোপ্লাস্টিক (thermoplastic) পলিমার?",
+          options: {
+            A: "পিভিসি (PVC)",
+            B: "পলিস্টারিন",
+            C: "পলিপ্রোপিন",
+            D: "সবগুলো",
+          },
+          correct: "D",
+          explanation:
+            "<p>থার্মোপ্লাস্টিক পলিমার হলো সেইসব পলিমার যা উত্তপ্ত করলে নরম হয় এবং ঠান্ডা করলে আবার শক্ত হয়, এবং এই প্রক্রিয়াটি বারবার পুনরাবৃত্তি করা যায়। PVC (পলিভিনাইল ক্লোরাইড), পলিস্টাইরিন (Polystyrene), এবং পলিপ্রোপিন (Polypropylene) সবগুলোই থার্মোপ্লাস্টিক পলিমার।</p>",
+        },
+        {
+          id: 31,
+          question: "PVA -এর মনোমার কোনটি?",
+          options: {
+            A: "CH₂ = CH - CH=CH₂",
+            B: "CH₂ CH - C(Cl) = Cl₂",
+            C: "CH₃COO - CH = CH₂",
+            D: "C₆H₅CH=CH-CH₃",
+          },
+          correct: "C",
+          explanation:
+            "<p>PVA (পলিভিনাইল অ্যাসিটেট) এর মনোমার হলো ভিনাইল অ্যাসিটেট (Vinyl acetate), যার রাসায়নিক সংকেত CH₃COOCH=CH₂ বা CH₃COO - CH = CH₂।</p>",
+        },
+        {
+          id: 32,
+          question: "প্রাকৃতিক পলিমার-",
+          options: {
+            A: "পলিথিন",
+            B: "নাইলন",
+            C: "পলিস্টাইরিন (polystyrene)",
+            D: "গাটাপার্চা",
+          },
+          correct: "D",
+          explanation:
+            "<p>প্রাকৃতিক পলিমার হলো সেইসব পলিমার যা প্রকৃতিতে পাওয়া যায়। গাটাপার্চা (Gutta-percha) হলো প্রাকৃতিক রাবারের একটি আইসোমার, যা প্রাকৃতিকভাবে পাওয়া যায়। পলিথিন, নাইলন এবং পলিস্টাইরিন কৃত্রিম পলিমার।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "ইউরিয়া থেকে মেলামাইন তৈরিতে নিম্নের কোনটি অনুঘটক হিসেবে কাজ করে?",
+          options: {
+            A: "TiO₂",
+            B: "V₂O₅",
+            C: "Pt",
+            D: "Ni",
+          },
+          correct: "A",
+          explanation:
+            "<p>ইউরিয়া থেকে মেলামাইন সংশ্লেষণে বিভিন্ন অনুঘটক ব্যবহার করা যেতে পারে, যার মধ্যে অ্যালুমিনা (Al₂O₃), সিলিকা (SiO₂), এবং টাইটানিয়াম ডাই অক্সাইড (TiO₂) অন্যতম। TiO₂ একটি পরিচিত অনুঘটক যা ইউরিয়া থেকে মেলামাইন তৈরিতে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 34,
+          question: "কোনটি পলিথিনের মনোমার?",
+          options: {
+            A: "ভিনাইল ক্লোরাইড",
+            B: "টেফলন",
+            C: "স্ট্যারিন",
+            D: "ইথিলিন",
+          },
+          correct: "D",
+          explanation:
+            "<p>পলিথিন (Polyethylene) এর মনোমার হলো ইথিলিন (Ethylene), যার রাসায়নিক সংকেত CH₂=CH₂।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                          <label class="option" data-option="${option}">
+                                                            <div class="circle">${option}</div>
+                                                            <span class="option-text">${question.options[option]}</span>
+                                                          </label>
+                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                             <div class="explanation-content">
+                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                               ${question.explanation}
+                                                             </div>
+                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                        <p class="question-label">${
+                                                          index + 1
+                                                        }. ${
+            question.question
+          }</p>
+                                                        <div class="options">
+                                                          ${optionsHTML}
+                                                        </div>
+                                                        ${explanationHTML}
+                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
